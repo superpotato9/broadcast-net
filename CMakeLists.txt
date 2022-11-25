@@ -5,4 +5,5 @@ include_directories(include/)
 
 add_library(bcnet SHARED
     src/bcnet.c
+    src/auth.c
 )
