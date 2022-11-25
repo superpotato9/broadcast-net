@@ -8,7 +8,7 @@ add_library(bcnet SHARED
 )
 
 if(WIN32)
-    target_sources(bcnet
+    target_sources(bcnet PUBLIC
         src/win32/bcnet.c
     )
 else()
@@ -17,4 +17,4 @@ else()
     )
 endif()
 
-add_executable("test.c")
+add_executable(test test.c)
