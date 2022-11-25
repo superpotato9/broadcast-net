@@ -17,5 +17,5 @@ cmake-build-*/
 
 # editor-specific configuration
 .vscode
-
+.vs
 .idea
