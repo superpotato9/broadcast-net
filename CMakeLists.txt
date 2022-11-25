@@ -12,7 +12,7 @@ if(WIN32)
         src/win32/bcnet.c
     )
 else()
-    target_sources(bcnet
-    src/unix/bcnet.c
+    target_sources(bcnet PUBLIC
+        src/unix/bcnet.c
     )
 endif()
