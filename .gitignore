@@ -14,8 +14,9 @@ _deps
 # build directories
 build/
 cmake-build-*/
+out/
 
 # editor-specific configuration
-.vscode
-.vs
-.idea
+.vscode/
+.vs/
+.idea/
