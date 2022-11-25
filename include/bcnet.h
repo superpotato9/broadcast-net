@@ -1,5 +1,3 @@
-
-
 #ifndef __bcnet
 #define __bcnet
 
