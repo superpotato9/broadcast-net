@@ -1,3 +1,4 @@
+# CMake resources
 CMakeLists.txt.user
 CMakeCache.txt
 CMakeFiles
@@ -9,3 +10,9 @@ install_manifest.txt
 compile_commands.json
 CTestTestfile.cmake
 _deps
+
+# build directory
+build
+
+# editor-specific configuration
+.vscode
