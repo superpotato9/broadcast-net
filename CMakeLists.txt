@@ -17,6 +17,6 @@ else()
     )
 endif()
 
-add_executable(test
+add_executable(test EXCLUDE_FROM_ALL
     test/main.c
 )
