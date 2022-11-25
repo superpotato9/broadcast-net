@@ -1,3 +1,7 @@
 #include "bcnet/bcnet.h"
 
-// do something
+#include <sys/socket.h>
+
+create_socket() {
+    return socket(AF_INET, SOCK_DGRAM, 0);
+}

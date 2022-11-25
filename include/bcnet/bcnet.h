@@ -1,6 +1,6 @@
-#ifndef __bcnet
-#define __bcnet
+#ifndef BRODCAST_NET_BCNET_H
+#define BRODCAST_NET_BCNET_H
 
-// something is done here
+int create_socket();
 
 #endif
