@@ -1,3 +1,3 @@
-#include "bcnet.h"
+#include "bcnet/bcnet.h"
 
 // do something
