@@ -16,3 +16,5 @@ else()
     src/unix/bcnet.c
     )
 endif()
+
+add_executable("test.c")
