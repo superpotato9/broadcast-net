@@ -17,4 +17,4 @@ else()
     )
 endif()
 
-add_executable(test test.c)
+add_executable(test tests/test.c)
