@@ -1,8 +1,6 @@
 - Add network functions to bcnet.h:
-    socket_create()
     send_to()
     recv()
-    socket_destroy()
 
 - Add encryption functions to auth.h:
     encrypt()
