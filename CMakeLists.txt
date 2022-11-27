@@ -5,6 +5,7 @@ include_directories(include/)
 
 add_library(bcnet SHARED
     src/bcnet/auth.c
+    src/bcnet/bcnet.c
 )
 
 if(WIN32)
