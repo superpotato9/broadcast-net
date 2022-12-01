@@ -30,7 +30,7 @@ destroy_socket(bcn_socket_t* bcn_socket) {
   return 0;
 }
 
-send_content(bcn_socket_t* bcn_socket, char* buffer, int32_t bufSize, Key target, struct sockaddr* addrChunk) {
+send_content(bcn_socket_t* bcn_socket, char* buffer, int32_t bufSize, Key target, struct sockaddr_in* addrChunk) {
   if (bcn_socket->streamPacketsSent > 0) {
     bcn_socket->streamPacketsSent = 0;
     bcn_socket->convKey = 0;
@@ -47,10 +47,17 @@ send_content(bcn_socket_t* bcn_socket, char* buffer, int32_t bufSize, Key target
   header->type = CONTENT;
   header->order = 0;
 
+  // populate the body
   char* body = packet + sizeof(struct bcn_packet_header);
   memcpy_s(body, bufSize, buffer, bufSize);
 
-  // TODO encrypt the packet & send it to all the addresses in the chunk
+  // TODO encrypt the packet
+
+  // brodcast the packet
+  struct sockaddr_in tempaddr = *addrChunk;
+  for (tempaddr.sin_addr.S_un.S_un_w.s_w2 = 0; tempaddr.sin_addr.S_un.S_un_w.s_w2 <= USHRT_MAX; tempaddr.sin_addr.S_un.S_un_w.s_w2++) {
+    sendto(bcn_socket, packet, packetSize, 0, &tempaddr, sizeof(struct sockaddr)); // TODO do we need to cast tempaddr to a struct sockaddr?
+  }
 
   free(packet);
   return 0;
