@@ -8,19 +8,9 @@ add_library(bcnet SHARED
     src/bcnet/bcnet.c
 )
 
-if(WIN32)
-    target_sources(bcnet PRIVATE
-        src/bcnet/win32/bcnet.c
-    )
-else()
-    target_sources(bcnet PRIVATE
-        src/bcnet/unix/bcnet.c
-    )
-endif()
-
 add_executable(test EXCLUDE_FROM_ALL
-    src/test/main.c
-)
-target_link_libraries(test
     bcnet
+    OpenSSL
+
+    src/test/main.c
 )

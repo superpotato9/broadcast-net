@@ -1,11 +1,5 @@
 // socket functions
 
-#if defined(_WIN32) || defined(__WIN32__)
-# include <WinSock2.h>
-#else
-# include <sys/socket.h>
-#endif
-
 #include <stdint.h>
 
 #ifndef BRODCAST_NET_BCNET_H
