@@ -2,7 +2,7 @@
 
 ## Supported Versions
 
-all versions are currently are
+all versions are
 currently being supported with security updates.
 
 | Version | Supported          |
@@ -13,6 +13,6 @@ currently being supported with security updates.
 ## Reporting a Vulnerability
 
 If you find a vunerbility in the codebase please report it to superpotato9 or FreehandBlock51 
-you should recive an update in less than a week 
+you should recive an update in less than a week.
 
 
