@@ -10,7 +10,7 @@ BNP is a network protocol based on UDP that aims for 100% anoniminity by removin
  	-  Content packets are encrypted using the target's known public key and contain data.  These are one-off messages, used when an extended conversation is not expected.
  	-  Setup packets are encryped using either the target's known public key or their individualized public key and contain an individualized public key for the target system to use for stream packets to the sender.  These are used to set up a stream between two systems.
  	- Stream packets are encrypted using the target's individualized public key and contain data.  These are used instead of content packets when a stream has already been set up between two systems.
- - If the packet is a stream packet, the number of stream packets sent before this one, to preserve order; otherwise this is unused (1 byte)
+ - If the packet is a stream packet, the number of stream packets sent before this one are sent as well, to preserve order the number of stream packets sent before is sent; otherwise this is unused (1 byte)
  - The length of the data (4 bytes)
 
 The entire packet is encrypted using the target's public key.  Public-private keypairs are unique to the network adapter, and are generated using its MAC address.
