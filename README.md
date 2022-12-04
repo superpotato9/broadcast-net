@@ -47,7 +47,7 @@ A typical conversation between two systems using a BNP stream looks like this:
 [MIT](https://choosealicense.com/licenses/mit/)
 
 
-## Acknowledgements
+## Maintainers
 
  - [superpotato9](https://github.com/superpotato9)
  - [FreehandBlock51](https://github.com/FreehandBlock51)
