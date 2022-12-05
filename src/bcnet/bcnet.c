@@ -30,7 +30,7 @@ destroy_socket(bcn_socket_t* bcn_socket) {
   return 0;
 }
 
-send_content(bcn_socket_t* bcn_socket, char* buffer, int32_t bufSize, Key target, struct sockaddr_in* addrChunk) {
+send_content(bcn_socket_t* bcn_socket, char* buffer, int32_t bufSize, struct sockaddr_bcn target) {
   if (bcn_socket->streamPacketsSent > 0) {
     bcn_socket->streamPacketsSent = 0;
     bcn_socket->convKey = 0;
@@ -54,11 +54,49 @@ send_content(bcn_socket_t* bcn_socket, char* buffer, int32_t bufSize, Key target
   // TODO encrypt the packet
 
   // brodcast the packet
-  struct sockaddr_in tempaddr = *addrChunk;
-  for (tempaddr.sin_addr.S_un.S_un_w.s_w2 = 0; tempaddr.sin_addr.S_un.S_un_w.s_w2 <= USHRT_MAX; tempaddr.sin_addr.S_un.S_un_w.s_w2++) {
+  struct sockaddr_in tempaddr = {
+    .sin_family = AF_INET,
+    .sin_addr = {
+      .S_un.S_un_w.s_w1 = target.range.full,
+      .S_un.S_un_w.s_w2 = 0
+    },
+    .sin_port = target.port,
+    .sin_zero = {0,0,0,0,0,0,0,0}
+  };
+  for (uint16_t lastIpHalf = 0; lastIpHalf <= USHRT_MAX; lastIpHalf++) {
+    tempaddr.sin_addr.S_un.S_un_w.s_w2 = lastIpHalf;
     sendto(bcn_socket, packet, packetSize, 0, &tempaddr, sizeof(struct sockaddr)); // TODO do we need to cast tempaddr to a struct sockaddr?
   }
 
   free(packet);
   return 0;
+}
+
+recv_content(bcn_socket_t* bcn_socket, char* buffer, int32_t bufsize, struct sockaddr_bcn fromaddr) {
+  if (bcn_socket->streamPacketsSent > 0) {
+    bcn_socket->streamPacketsSent = 0;
+    bcn_socket->convKey = 0;
+    bcn_socket->curTarget = 0;
+  }
+
+  int result = 0;
+
+  // recieve the packet
+  struct sockaddr_in tempaddr = {
+    .sin_family = AF_INET,
+    .sin_addr = {
+      .S_un.S_un_w.s_w1 = fromaddr.range.full,
+      .S_un.S_un_w.s_w2 = 0
+    },
+    .sin_port = fromaddr.port,
+    .sin_zero = {0,0,0,0,0,0,0,0}
+  };
+  for (uint16_t lastIpHalf = 0; lastIpHalf <= USHRT_MAX; lastIpHalf++) {
+    tempaddr.sin_addr.S_un.S_un_w.s_w2 = lastIpHalf;
+    result = recvfrom(bcn_socket->fd, buffer, bufsize + sizeof(struct bcn_packet_header), 0, &tempaddr, sizeof(tempaddr)); // TODO do we need to cast tempaddr to a struct sockaddr?
+
+    // TODO check if the packet is ours
+  }
+
+  return result;
 }
