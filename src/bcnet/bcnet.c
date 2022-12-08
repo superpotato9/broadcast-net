@@ -12,6 +12,7 @@
 #include <stdio.h>
 #include <stddef.h>
 #include <malloc.h>
+#include <errno.h>
 
 bcn_socket_t create_socket() {
   bcn_socket_t bcn_socket = (bcn_socket_t){ 0 };
@@ -50,9 +51,7 @@ send_content(bcn_socket_t* bcn_socket, char* buffer, int32_t bufSize, struct soc
 
   // populate the body
   char* body = packet + sizeof(struct bcn_packet_header);
-  memcpy_s(body, bufSize, buffer, bufSize);
-
-  // TODO encrypt the packet
+  body = rsa_encrypt(target.key, buffer, bufSize);
 
   // brodcast the packet
   struct sockaddr_in tempaddr = {
@@ -92,12 +91,30 @@ recv_content(bcn_socket_t* bcn_socket, char* buffer, int32_t bufsize, struct soc
     .sin_port = fromaddr.port,
     .sin_zero = {0,0,0,0,0,0,0,0}
   };
+  size_t packetsize = bufsize + sizeof(struct bcn_packet_header);
+  char *encryptedpacket = malloc(packetsize);
   for (uint16_t lastIpHalf = 0; lastIpHalf <= USHRT_MAX; lastIpHalf++) {
     tempaddr.sin_addr.S_un.S_un_w.s_w2 = lastIpHalf;
-    result = recvfrom(bcn_socket->fd, buffer, bufsize + sizeof(struct bcn_packet_header), 0, &tempaddr, sizeof(tempaddr)); // TODO do we need to cast tempaddr to a struct sockaddr?
+    result = recvfrom(bcn_socket->fd, encryptedpacket, packetsize, 0, &tempaddr, sizeof(tempaddr)); // TODO do we need to cast tempaddr to a struct sockaddr?
 
-    // TODO check if the packet is ours
+    // check if the packet is ours
+    if (result < sizeof(struct bcn_packet_header)) {
+      continue;
+    }
+    rsa_decrypt(fromaddr.key, encryptedpacket, packetsize, buffer, bufsize);
+    struct bcn_packet_header *header = (struct bcn_packet_header*)buffer;
+    if (header->constant != BNP_CONST) {
+      memset(buffer, 0, bufsize); // TODO is this the right order?
+      continue;
+    }
+    if (header->type != CONTENT) {
+      memset(buffer, 0, bufsize); // TODO is this the right order?
+      continue;
+    }
+
+    // get the message content
   }
+  free(encryptedpacket);
 
   return result;
 }
