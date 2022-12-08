@@ -10,6 +10,7 @@
 #endif
 
 #include <stdio.h>
+#include <stddef.h>
 #include <malloc.h>
 
 bcn_socket_t create_socket() {

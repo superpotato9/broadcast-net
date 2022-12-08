@@ -2,15 +2,14 @@
 
 #include <stdint.h>
 
+#include "bcnet/auth.h"
+
 #ifndef BRODCAST_NET_BCNET_H
 #define BRODCAST_NET_BCNET_H
 
 // the constant
 #define BNP_CONST "This is a test constant"
 #define BNP_CONST_LEN sizeof(BNP_CONST)
-
-// a public or private key
-typedef int key_t;
 
 typedef struct {
   int fd; // the socket descriptor
