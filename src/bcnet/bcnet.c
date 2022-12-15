@@ -6,6 +6,7 @@
 #else
 # include <unistd.h>
 # include <sys/socket.h>
+#include <netdb.h>
 # define closesocket close
 #endif
 
@@ -13,12 +14,13 @@
 #include <stddef.h>
 #include <malloc.h>
 #include <errno.h>
+#include <string.h>
+#include <stdint.h>
 
 bcn_socket_t create_socket() {
   bcn_socket_t bcn_socket = (bcn_socket_t){ 0 };
   bcn_socket.fd = socket(AF_INET, SOCK_DGRAM, 0);
-  bcn_socket.convKey = 0;
-  bcn_socket.curTarget = 0;
+  // convKey & curTarget are arrays, so they're already initilized
   bcn_socket.streamPacketsSent = 0;
   return bcn_socket;
 }
@@ -33,10 +35,10 @@ destroy_socket(bcn_socket_t* bcn_socket) {
 }
 
 send_content(bcn_socket_t* bcn_socket, char* buffer, int32_t bufSize, struct sockaddr_bcn target) {
-  if (bcn_socket->streamPacketsSent > 0) {
+  if (bcn_socket->streamPacketsSent > 0) { // stream sockets sending content packets will lose their connection to the stream
     bcn_socket->streamPacketsSent = 0;
-    bcn_socket->convKey = 0;
-    bcn_socket->curTarget = 0;
+    memset(bcn_socket->convKey, 0, sizeof(key_t));
+    memset(bcn_socket->curTarget, 0, sizeof(key_t));
   }
 
   size_t packetSize = sizeof(struct bcn_packet_header) + bufSize;
@@ -57,14 +59,13 @@ send_content(bcn_socket_t* bcn_socket, char* buffer, int32_t bufSize, struct soc
   struct sockaddr_in tempaddr = {
     .sin_family = AF_INET,
     .sin_addr = {
-      .S_un.S_un_w.s_w1 = target.range.full,
-      .S_un.S_un_w.s_w2 = 0
+      .s_addr = target.range.full << 16
     },
     .sin_port = target.port,
     .sin_zero = {0,0,0,0,0,0,0,0}
   };
-  for (uint16_t lastIpHalf = 0; lastIpHalf <= USHRT_MAX; lastIpHalf++) {
-    tempaddr.sin_addr.S_un.S_un_w.s_w2 = lastIpHalf;
+  for (uint16_t lastIpHalf = 0; lastIpHalf <= UINT16_MAX; lastIpHalf++) {
+    tempaddr.sin_addr.s_addr++;
     sendto(bcn_socket, packet, packetSize, 0, &tempaddr, sizeof(struct sockaddr)); // TODO do we need to cast tempaddr to a struct sockaddr?
   }
 
@@ -73,10 +74,10 @@ send_content(bcn_socket_t* bcn_socket, char* buffer, int32_t bufSize, struct soc
 }
 
 recv_content(bcn_socket_t* bcn_socket, char* buffer, int32_t bufsize, struct sockaddr_bcn fromaddr) {
-  if (bcn_socket->streamPacketsSent > 0) {
+  if (bcn_socket->streamPacketsSent > 0) { // stream sockets sending content packets will lose their connection to the stream
     bcn_socket->streamPacketsSent = 0;
-    bcn_socket->convKey = 0;
-    bcn_socket->curTarget = 0;
+    memset(bcn_socket->convKey, 0, sizeof(key_t));
+    memset(bcn_socket->curTarget, 0, sizeof(key_t));
   }
 
   int result = 0;
@@ -85,16 +86,15 @@ recv_content(bcn_socket_t* bcn_socket, char* buffer, int32_t bufsize, struct soc
   struct sockaddr_in tempaddr = {
     .sin_family = AF_INET,
     .sin_addr = {
-      .S_un.S_un_w.s_w1 = fromaddr.range.full,
-      .S_un.S_un_w.s_w2 = 0
+      .s_addr = fromaddr.range.full << 16
     },
     .sin_port = fromaddr.port,
     .sin_zero = {0,0,0,0,0,0,0,0}
   };
   size_t packetsize = bufsize + sizeof(struct bcn_packet_header);
   char *encryptedpacket = malloc(packetsize);
-  for (uint16_t lastIpHalf = 0; lastIpHalf <= USHRT_MAX; lastIpHalf++) {
-    tempaddr.sin_addr.S_un.S_un_w.s_w2 = lastIpHalf;
+  for (uint16_t lastIpHalf = 0; lastIpHalf <= UINT16_MAX; lastIpHalf++) {
+    tempaddr.sin_addr.s_addr++;
     result = recvfrom(bcn_socket->fd, encryptedpacket, packetsize, 0, &tempaddr, sizeof(tempaddr)); // TODO do we need to cast tempaddr to a struct sockaddr?
 
     // check if the packet is ours

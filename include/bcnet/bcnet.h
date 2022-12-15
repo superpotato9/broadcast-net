@@ -54,13 +54,13 @@ int destroy_socket(bcn_socket_t* bcn_socket);
 int send_content(bcn_socket_t *bcn_socket, char* buffer, int32_t bufSize, struct sockaddr_bcn target);
 
 // recieves a content packet
-int recv_content(bcn_socket_t *bcn_socket, char* buffer, int32_t bufsize);
+int recv_content(bcn_socket_t *bcn_socket, char* buffer, int32_t bufsize, struct sockaddr_bcn fromaddr);
 
 // begins a stream with a specified target
 int connect_to(bcn_socket_t *bcn_socket, key_t target);
 
 // accepts a connection
-key_t accept_from(bcn_socket_t* bcn_socket);
+int accept_from(bcn_socket_t* bcn_socket);
 
 // sends a stream packet to a target
 int send_stream(bcn_socket_t *bcn_socket, char* buffer, int32_t bufsize);
