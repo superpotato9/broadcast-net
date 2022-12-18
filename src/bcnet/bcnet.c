@@ -25,7 +25,7 @@ bcn_socket_t create_socket() {
   return bcn_socket;
 }
 
-destroy_socket(bcn_socket_t* bcn_socket) {
+int destroy_socket(bcn_socket_t* bcn_socket) {
   int result;
   if ((result = closesocket(bcn_socket->fd)) != 0) {
     return result;
@@ -34,11 +34,11 @@ destroy_socket(bcn_socket_t* bcn_socket) {
   return 0;
 }
 
-send_content(bcn_socket_t* bcn_socket, char* buffer, int32_t bufSize, struct sockaddr_bcn target) {
+int send_content(bcn_socket_t* bcn_socket, char* buffer, int32_t bufSize, struct sockaddr_bcn target) {
   if (bcn_socket->streamPacketsSent > 0) { // stream sockets sending content packets will lose their connection to the stream
     bcn_socket->streamPacketsSent = 0;
-    memset(bcn_socket->convKey, 0, sizeof(key_t));
-    memset(bcn_socket->curTarget, 0, sizeof(key_t));
+    memset(bcn_socket->convKey, 0, sizeof(bcn_key_t));
+    memset(bcn_socket->curTarget, 0, sizeof(bcn_key_t));
   }
 
   size_t packetSize = sizeof(struct bcn_packet_header) + bufSize;
@@ -79,11 +79,11 @@ send_content(bcn_socket_t* bcn_socket, char* buffer, int32_t bufSize, struct soc
   return 0;
 }
 
-recv_content(bcn_socket_t* bcn_socket, char* buffer, int32_t bufsize, struct sockaddr_bcn fromaddr) {
+int recv_content(bcn_socket_t* bcn_socket, char* buffer, int32_t bufsize, struct sockaddr_bcn fromaddr) {
   if (bcn_socket->streamPacketsSent > 0) { // stream sockets sending content packets will lose their connection to the stream
     bcn_socket->streamPacketsSent = 0;
-    memset(bcn_socket->convKey, 0, sizeof(key_t));
-    memset(bcn_socket->curTarget, 0, sizeof(key_t));
+    memset(bcn_socket->convKey, 0, sizeof(bcn_key_t));
+    memset(bcn_socket->curTarget, 0, sizeof(bcn_key_t));
   }
 
   int result = 0;
@@ -106,11 +106,12 @@ recv_content(bcn_socket_t* bcn_socket, char* buffer, int32_t bufsize, struct soc
     free(decryptedpacket); // free both, in case one of the allocations worked
     return -1; // errno set by malloc
   }
+  socklen_t tempaddrlen = sizeof(tempaddr);
 
   for (uint16_t lastIpHalf = 0; lastIpHalf < UINT16_MAX; lastIpHalf++) {
     tempaddr.sin_addr.s_addr++;
     memset(encryptedpacket, 0, packetsize); // clear packet buffer to prevent corruption
-    result = recvfrom(bcn_socket->fd, encryptedpacket, packetsize, 0, (struct sockaddr*)&tempaddr, sizeof(tempaddr)); // TODO do we need to cast tempaddr to a struct sockaddr?
+    result = recvfrom(bcn_socket->fd, encryptedpacket, packetsize, 0, (struct sockaddr*)&tempaddr, &tempaddrlen); // TODO do we need to cast tempaddr to a struct sockaddr?
 
     // check if the packet is ours
     if (result < sizeof(struct bcn_packet_header)) { // packet is smaller than our header size, and therefore can't be ours
@@ -126,8 +127,10 @@ recv_content(bcn_socket_t* bcn_socket, char* buffer, int32_t bufsize, struct soc
     }
 
     // get the message content
-    if (!(errno = memcpy_s(buffer, bufsize, decryptedpacket + sizeof(struct bcn_packet_header), packetsize - sizeof(struct bcn_packet_header)))) { // memcpy failure
-      result = -1; // errno is set by memcpy_s
+    char* body = decryptedpacket + sizeof(struct bcn_packet_header);
+    if (memccpy(buffer, body, 0, bufsize) != NULL) { // buffer doesn't end in 0 like a standard C string; if let unchecked, this could cause overflows
+      errno = EMSGSIZE; // packet might be bigger than the buffer
+      result = 1; // not an error, just a warning
     }
     break; // result will either be 0 or errno will be set.  Either way, cleanup is after the loop
   }

@@ -13,8 +13,8 @@
 
 typedef struct {
   int fd; // the socket descriptor
-  key_t convKey; // the individualized key, if in a stream
-  key_t curTarget; // the current target for stream packets, if any
+  bcn_key_t convKey; // the individualized key, if in a stream
+  bcn_key_t curTarget; // the current target for stream packets, if any
   uint8_t streamPacketsSent; // the amount of packets sent in the current stream
 } bcn_socket_t;
 
@@ -41,7 +41,7 @@ struct sockaddr_bcn {
     uint16_t full;
   } range;
   uint16_t port;
-  key_t key;
+  bcn_key_t key;
 };
 
 // creates and returns a socket
@@ -57,7 +57,7 @@ int send_content(bcn_socket_t *bcn_socket, char* buffer, int32_t bufSize, struct
 int recv_content(bcn_socket_t *bcn_socket, char* buffer, int32_t bufsize, struct sockaddr_bcn fromaddr);
 
 // begins a stream with a specified target
-int connect_to(bcn_socket_t *bcn_socket, key_t target);
+int connect_to(bcn_socket_t *bcn_socket, bcn_key_t target);
 
 // accepts a connection
 int accept_from(bcn_socket_t* bcn_socket);
