@@ -53,7 +53,9 @@ send_content(bcn_socket_t* bcn_socket, char* buffer, int32_t bufSize, struct soc
 
   // populate the body
   char* body = packet + sizeof(struct bcn_packet_header);
-  body = rsa_encrypt(target.key, buffer, bufSize);
+  if (!rsa_encrypt(target.key, buffer, bufSize, body, sizeof(body))) {
+    return -1; // errno should be set by rsa_encrypt
+  }
 
   // brodcast the packet
   struct sockaddr_in tempaddr = {
