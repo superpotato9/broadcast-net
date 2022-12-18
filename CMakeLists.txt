@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.20)
+cmake_minimum_required(VERSION 3.15)
 project(broadcast-net C)
 find_package(OpenSSL)
 include_directories(include/)
@@ -9,8 +9,9 @@ add_library(bcnet SHARED
 )
 
 add_executable(test EXCLUDE_FROM_ALL
+    src/test/main.c
+)
+target_link_libraries(test
     bcnet
     OpenSSL
-
-    src/test/main.c
 )
