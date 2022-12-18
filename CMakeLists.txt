@@ -7,6 +7,11 @@ add_library(bcnet SHARED
     src/bcnet/auth.c
     src/bcnet/bcnet.c
 )
+if (WIN32)
+    target_link_libraries(bcnet
+        Ws2_32.lib
+    )
+endif()
 
 add_executable(test EXCLUDE_FROM_ALL
     src/test/main.c
