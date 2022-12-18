@@ -116,7 +116,7 @@ recv_content(bcn_socket_t* bcn_socket, char* buffer, int32_t bufsize, struct soc
     if (result < sizeof(struct bcn_packet_header)) { // packet is smaller than our header size, and therefore can't be ours
       continue;
     }
-    if (!(result = rsa_decrypt(fromaddr.key, encryptedpacket, packetsize, decryptedpacket, packetsize)_) { // decryption error
+    if (!(result = rsa_decrypt(fromaddr.key, encryptedpacket, packetsize, decryptedpacket, packetsize))) { // decryption error
       break; // cleanup is done after the loop, & errno is set by rsa_decrypt
     }
     struct bcn_packet_header *header = (struct bcn_packet_header*)decryptedpacket;
