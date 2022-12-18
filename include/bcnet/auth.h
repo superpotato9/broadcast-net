@@ -7,8 +7,15 @@
 #ifndef BROADCAST_NET_AUTH_H
 #define BROADCAST_NET_AUTH_H
 
+// the length of a key, in bytes
+#define BCN_KEY_LEN 256
+
 // a public or private key
-typedef char bcn_key_t[256];
+typedef char bcn_key_t[BCN_KEY_LEN];
+
+// assigns a value to a key (TODO improve performance)
+#define bcn_assign_key(src, dest) memcpy(dest, src, sizeof(bcn_key_t))
+
 
 // takes public key and  message and returns the rsa encryted message
 int rsa_encrypt(bcn_key_t pub_key, char *msg, size_t msglen, char *encrypted, size_t encryptedlen);
