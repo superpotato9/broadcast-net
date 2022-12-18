@@ -17,6 +17,35 @@
 #include <string.h>
 #include <stdint.h>
 
+
+/* Internal Definitions
+ * These are necessary for the implementations of functions,
+ * but are not used by the end user.  We put them here to
+ * keep bcnet.h small.
+ */
+// the constant
+#define BNP_CONST "This is a test constant"
+#define BNP_CONST_LEN sizeof(BNP_CONST)
+
+// the type of a BCN packet
+enum PacketType
+{
+  CONTENT,
+  SETUP,
+  STREAM
+};
+
+// the header of a BCN packet
+struct bcn_packet_header {
+  char constant[BNP_CONST_LEN]; // the constant
+  enum PacketType type; // the packet's type
+  uint8_t order; // unused unless packet is of type STREAM; if it is, then the amount of STREAM packets sent before this one
+  uint32_t content_length; // the length of the content, in bytes
+};
+
+/* Function Implementations
+ * These are implementations of functions defined in bcnet.h
+ */
 bcn_socket_t create_socket() {
   bcn_socket_t bcn_socket = (bcn_socket_t){ 0 };
   bcn_socket.fd = socket(AF_INET, SOCK_DGRAM, 0);
@@ -138,4 +167,15 @@ int recv_content(bcn_socket_t* bcn_socket, char* buffer, int32_t bufsize, struct
   free(decryptedpacket);
 
   return result;
+}
+
+int connect_to(bcn_socket_t *bcn_socket, struct sockaddr_bcn target) {
+  bcn_assign_key(target, bcn_socket->curTarget);
+  create_key(bcn_socket->convKey);
+
+
+}
+
+int accept_from(bcn_socket_t* bcn_socket) {
+
 }
