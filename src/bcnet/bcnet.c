@@ -43,6 +43,9 @@ send_content(bcn_socket_t* bcn_socket, char* buffer, int32_t bufSize, struct soc
 
   size_t packetSize = sizeof(struct bcn_packet_header) + bufSize;
   char *packet = malloc(packetSize);
+  if (packet == NULL) {
+    return -1; // errno set by malloc
+  }
 
   // populate the header
   struct bcn_packet_header *header = (struct bcn_packet_header*)packet;
@@ -54,6 +57,7 @@ send_content(bcn_socket_t* bcn_socket, char* buffer, int32_t bufSize, struct soc
   // populate the body
   char* body = packet + sizeof(struct bcn_packet_header);
   if (!rsa_encrypt(target.key, buffer, bufSize, body, sizeof(body))) {
+    free(packet);
     return -1; // errno should be set by rsa_encrypt
   }
 
@@ -66,9 +70,9 @@ send_content(bcn_socket_t* bcn_socket, char* buffer, int32_t bufSize, struct soc
     .sin_port = target.port,
     .sin_zero = {0,0,0,0,0,0,0,0}
   };
-  for (uint16_t lastIpHalf = 0; lastIpHalf <= UINT16_MAX; lastIpHalf++) {
+  for (uint16_t lastIpHalf = 0; lastIpHalf < UINT16_MAX; lastIpHalf++) {
     tempaddr.sin_addr.s_addr++;
-    sendto(bcn_socket, packet, packetSize, 0, &tempaddr, sizeof(struct sockaddr)); // TODO do we need to cast tempaddr to a struct sockaddr?
+    sendto(bcn_socket->fd, packet, packetSize, 0, (struct sockaddr*)&tempaddr, sizeof(struct sockaddr));
   }
 
   free(packet);
@@ -85,7 +89,7 @@ recv_content(bcn_socket_t* bcn_socket, char* buffer, int32_t bufsize, struct soc
   int result = 0;
 
   // recieve the packet
-  struct sockaddr_in tempaddr = {
+  struct sockaddr_in tempaddr = (struct sockaddr_in){
     .sin_family = AF_INET,
     .sin_addr = {
       .s_addr = fromaddr.range.full << 16
@@ -93,30 +97,42 @@ recv_content(bcn_socket_t* bcn_socket, char* buffer, int32_t bufsize, struct soc
     .sin_port = fromaddr.port,
     .sin_zero = {0,0,0,0,0,0,0,0}
   };
+
   size_t packetsize = bufsize + sizeof(struct bcn_packet_header);
   char *encryptedpacket = malloc(packetsize);
-  for (uint16_t lastIpHalf = 0; lastIpHalf <= UINT16_MAX; lastIpHalf++) {
+  char *decryptedpacket = malloc(packetsize);
+  if (encryptedpacket == NULL || decryptedpacket == NULL) {
+    free(encryptedpacket);
+    free(decryptedpacket); // free both, in case one of the allocations worked
+    return -1; // errno set by malloc
+  }
+
+  for (uint16_t lastIpHalf = 0; lastIpHalf < UINT16_MAX; lastIpHalf++) {
     tempaddr.sin_addr.s_addr++;
-    result = recvfrom(bcn_socket->fd, encryptedpacket, packetsize, 0, &tempaddr, sizeof(tempaddr)); // TODO do we need to cast tempaddr to a struct sockaddr?
+    memset(encryptedpacket, 0, packetsize); // clear packet buffer to prevent corruption
+    result = recvfrom(bcn_socket->fd, encryptedpacket, packetsize, 0, (struct sockaddr*)&tempaddr, sizeof(tempaddr)); // TODO do we need to cast tempaddr to a struct sockaddr?
 
     // check if the packet is ours
-    if (result < sizeof(struct bcn_packet_header)) {
+    if (result < sizeof(struct bcn_packet_header)) { // packet is smaller than our header size, and therefore can't be ours
       continue;
     }
-    rsa_decrypt(fromaddr.key, encryptedpacket, packetsize, buffer, bufsize);
-    struct bcn_packet_header *header = (struct bcn_packet_header*)buffer;
-    if (header->constant != BNP_CONST) {
-      memset(buffer, 0, bufsize); // TODO is this the right order?
-      continue;
+    if (!(result = rsa_decrypt(fromaddr.key, encryptedpacket, packetsize, decryptedpacket, packetsize)_) { // decryption error
+      break; // cleanup is done after the loop, & errno is set by rsa_decrypt
     }
-    if (header->type != CONTENT) {
-      memset(buffer, 0, bufsize); // TODO is this the right order?
+    struct bcn_packet_header *header = (struct bcn_packet_header*)decryptedpacket;
+    if (header->constant != BNP_CONST || header->type != CONTENT) {
+      memset(decryptedpacket, 0, packetsize); // clear decrypted buffer to prevent corruption
       continue;
     }
 
     // get the message content
+    if (!(errno = memcpy_s(buffer, bufsize, decryptedpacket + sizeof(struct bcn_packet_header), packetsize - sizeof(struct bcn_packet_header)))) { // memcpy failure
+      result = -1; // errno is set by memcpy_s
+    }
+    break; // result will either be 0 or errno will be set.  Either way, cleanup is after the loop
   }
   free(encryptedpacket);
+  free(decryptedpacket);
 
   return result;
 }
